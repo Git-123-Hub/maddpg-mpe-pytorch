@@ -41,3 +41,9 @@ class MADDPG:
 
     def learn(self):
         pass
+
+    def update_target(self, tau):
+        pass
+
+    def load(self, file):
+        pass
