@@ -26,7 +26,7 @@ if __name__ == '__main__':
     scenario = scenarios.load(f'{args.env}.py').Scenario()
     world = scenario.make_world()
     env = MultiAgentEnv(world, scenario.reset_world, scenario.reward, scenario.observation)
-    obs = env.reset()
+
     # get dimension info about observation and action
     obs_dim_list = []
     for obs_space in env.observation_space:  # continuous observation
@@ -40,19 +40,16 @@ if __name__ == '__main__':
 
     total_reward = np.zeros((args.episode_num, env.n))  # reward of each episode
     for episode in range(args.episode_num):
+        obs = env.reset()
         # record reward of each agent in this episode
         episode_reward = np.zeros((args.episode_length, env.n))
         for step in range(args.episode_length):  # interact with the env for an episode
-            actions = []
-            for i in range(env.n):
-                action = env.action_space[i].sample()
-                a = [0] * 5
-                a[action] = 1
-                actions.append(a)
-            # actions = maddpg.select_action()
+            actions = maddpg.select_action(obs, explore=True)
             next_obs, rewards, dones, infos = env.step(actions)
             episode_reward[step] = rewards
-            # env.render()
+            env.render()
+
+            maddpg.add(obs, actions, rewards, next_obs, dones)
 
         # episode finishes
         # calculate cumulative reward of each agent in this episode

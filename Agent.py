@@ -22,16 +22,16 @@ class Agent:
         self.target_actor = deepcopy(self.actor)
         self.target_critic = deepcopy(self.critic)
 
-    def action(self, state, *, explore):
+    def action(self, obs, *, explore):
         # this method is called in the following two cases:
         # a) interact with the environment, where input is a numpy.ndarray
         # NOTE that the output is a tensor, you have to convert it to ndarray before input to the environment
         # b) when update actor, calculate action using actor and states,
         # which is sampled from replay buffer with size: torch.Size([batch_size, state_dim])
 
-        if isinstance(state, np.ndarray):
-            state = torch.from_numpy(state).unsqueeze(0)  # torch.Size([1, state_size])
-        action = self.actor(state)  # torch.Size([batch_size, action_size])
+        if isinstance(obs, np.ndarray):
+            obs = torch.from_numpy(obs).unsqueeze(0).float()  # torch.Size([1, state_size])
+        action = self.actor(obs)  # torch.Size([batch_size, action_size])
         if explore:
             action = gumbel_softmax(action, hard=True)
             # if hard=True, the returned samples will be discretized as one-hot vectors

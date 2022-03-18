@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 
-class buffer:
+class Buffer:
     def __init__(self, capacity, obs_dim, act_dim):
         self.capacity = capacity
 
