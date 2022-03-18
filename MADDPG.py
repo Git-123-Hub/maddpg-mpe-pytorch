@@ -1,7 +1,11 @@
 import logging
+from copy import deepcopy
+
+import numpy as np
 
 from Agent import Agent
 from Buffer import Buffer
+import torch.nn.functional as F
 
 
 def setup_logger(filename):
@@ -20,7 +24,7 @@ def setup_logger(filename):
 
 
 class MADDPG:
-    def __init__(self, obs_dim_list, act_dim_list, capacity, batch_size, actor_lr, critic_lr):
+    def __init__(self, obs_dim_list, act_dim_list, capacity, actor_lr, critic_lr):
         # sum all the dims of each agent to get input dim for critic
         global_obs_dim = sum(obs_dim_list + act_dim_list)
         # create all the agents and corresponding replay buffer
@@ -29,7 +33,6 @@ class MADDPG:
         for obs_dim, act_dim in zip(obs_dim_list, act_dim_list):
             self.agents.append(Agent(obs_dim, act_dim, global_obs_dim, actor_lr, critic_lr))
             self.buffers.append(Buffer(capacity, obs_dim, act_dim))
-        self.batch_size = batch_size
         self.logger = setup_logger('maddpg.log')
 
     def add(self, obs, actions, rewards, next_obs, dones):
@@ -45,8 +48,52 @@ class MADDPG:
             self.logger.info(f'agent {n}, action: {act}')
         return actions
 
-    def learn(self):
-        pass
+    def learn(self, batch_size, gamma):
+        # get the total num of transitions, these buffers should have same number of transitions
+        total_num = len(self.buffers[0])
+        if total_num <= batch_size:  # only start to learn when there are enough experiences to sample
+            return
+        # sample from all the replay buffer using the same index
+        indices = np.random.choice(total_num, size=batch_size, replace=False)
+        samples = []
+        state_list, act_list, next_state_list, next_act_list = [], [], [], []
+        for n, buffer in enumerate(self.buffers):
+            transitions = buffer.sample(indices)
+            samples.append(transitions)
+            state_list.append(transitions[0])
+            act_list.append(transitions[1])
+            next_state_list.append(transitions[3])
+            # calculate next_action using target_network and next_state
+            next_act_list.append(self.agents[n].target_action(transitions[3]))
+
+        # update all agents
+        for n, agent in enumerate(self.agents):
+            # update critic
+            states, actions, rewards, next_states, dones = samples[n]
+            critic_value = agent.critic_value(state_list, act_list)  # tensor with the length of batch_size
+
+            # calculate target critic value
+            next_target_critic_value = agent.target_critic_value(next_state_list, next_act_list)
+            target_value = rewards + gamma * next_target_critic_value * (1 - dones)
+
+            critic_loss = F.mse_loss(critic_value, target_value.detach(), reduction='mean')
+            agent.update_critic(critic_loss)
+
+            # update actor
+            # action_list = []
+            # # todo: check difference between act_list
+            # for agent_name in self.agents.keys():  # loop over all the agents
+            #     if agent_name == n:  # action of the current agent is calculated using its actor
+            #         # todo: try with noise
+            #         action = agent.action(states, explore=False)  # NOTE that NO noise
+            #     else:  # action of other agents is from the samples
+            #         action = samples[agent_name][1]
+            #     action_list.append(action)
+            action_list = deepcopy(act_list)  # todo: deepcopy????
+            action_list[n] = agent.action(states, explore=False)  # NOTE that NO noise
+            actor_loss = -agent.critic_value(state_list, action_list).mean()
+            agent.update_actor(actor_loss)
+            self.logger.info(f'agent{n}: critic loss: {critic_loss.item()}, actor loss: {actor_loss.item()}')
 
     def update_target(self, tau):
         def soft_update(from_network, to_network):
