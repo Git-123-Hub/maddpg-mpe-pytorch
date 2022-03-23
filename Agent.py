@@ -53,17 +53,13 @@ class Agent:
         action = one_hot(max_index, num_classes=action.size(1)).detach()
         return action  # onehot tensor with size: torch.Size([batch_size, action_size])
 
-    def _critic_value(self, x, *, target=False):
-        if target:
-            return self.target_critic(x).squeeze(1)  # tensor with length of batch_size
-        else:
-            return self.critic(x).squeeze(1)
-
     def critic_value(self, state_list: List[Tensor], act_list: List[Tensor]):
-        return self._critic_value(torch.cat(state_list + act_list, 1), target=False)
+        x = torch.cat(state_list + act_list, 1)
+        return self.critic(x).squeeze(1)  # tensor with a given length
 
     def target_critic_value(self, state_list: List[Tensor], act_list: List[Tensor]):
-        return self._critic_value(torch.cat(state_list + act_list, 1), target=True)
+        x = torch.cat(state_list + act_list, 1)
+        return self.target_critic(x).squeeze(1)  # tensor with a given length
 
     def update_actor(self, loss):
         self.actor_optimizer.zero_grad()
@@ -74,18 +70,6 @@ class Agent:
         self.critic_optimizer.zero_grad()
         loss.backward()
         self.critic_optimizer.step()
-
-    def update_target(self, tau):
-        def soft_update(from_network, to_network):
-            """
-            copy the parameters of `from_network` to `to_network` with a proportion of tau
-            i.e. update `to_network` parameter with tau of `from_network`
-            """
-            for to_p, from_p in zip(to_network.parameters(), from_network.parameters()):
-                to_p.data.copy_(tau * from_p.data + (1.0 - tau) * to_p.data)
-
-        soft_update(self.actor, self.target_actor)
-        soft_update(self.critic, self.target_critic)
 
 
 class MLPNetwork(nn.Module):

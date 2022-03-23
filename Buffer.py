@@ -15,12 +15,12 @@ class Buffer:
         self._index = 0
         self._size = 0
 
-    def add(self, state, action, reward, next_state, done):
+    def add(self, obs, action, reward, next_obs, done):
         """ add an experience to the memory """
-        self.obs[self._index] = state
+        self.obs[self._index] = obs
         self.action[self._index] = action
         self.reward[self._index] = reward
-        self.next_obs[self._index] = next_state
+        self.next_obs[self._index] = next_obs
         self.done[self._index] = done
 
         self._index = (self._index + 1) % self.capacity

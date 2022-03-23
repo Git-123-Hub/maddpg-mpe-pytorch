@@ -17,6 +17,7 @@ if __name__ == '__main__':
                                  'simple_world_comm'])
     parser.add_argument('--episode-length', type=int, default=100, help='steps per episode')
     parser.add_argument('--episode-num', type=int, default=5000, help='total number of episode')
+    parser.add_argument('--gamma', type=float, default=0.95, help='discount factor')
     parser.add_argument('--buffer-capacity', default=int(1e6))
     parser.add_argument('--batch-size', default=1000)
     parser.add_argument('--actor-lr', type=float, default=0.01, help='learning rate of actor')
@@ -42,7 +43,7 @@ if __name__ == '__main__':
     maddpg = MADDPG(obs_dim_list, act_dim_list, args.buffer_capacity, args.actor_lr, args.critic_lr)
 
     total_step = 0
-    total_reward = np.zeros((args.episode_num, env.n))  # reward of each episode
+    total_reward = np.zeros((args.episode_num, env.n))  # reward of each agent in each episode
     for episode in range(args.episode_num):
         obs = env.reset()
         # record reward of each agent in this episode
@@ -70,7 +71,7 @@ if __name__ == '__main__':
     torch.save([agent.actor.state_dict() for agent in maddpg.agents], 'model.pt')
 
 
-    def get_running_reward(reward_array: np.ndarray, window=20):
+    def get_running_reward(reward_array: np.ndarray, window=100):
         """calculate the running reward, i.e. average of last `window` elements from rewards"""
         running_reward = np.zeros_like(reward_array)
         for i in range(window - 1):

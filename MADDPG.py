@@ -70,11 +70,12 @@ class MADDPG:
         for n, agent in enumerate(self.agents):
             # update critic
             states, actions, rewards, next_states, dones = samples[n]
-            critic_value = agent.critic_value(state_list, act_list)  # tensor with the length of batch_size
+            critic_value = agent.critic_value(state_list, act_list)
 
             # calculate target critic value
             next_target_critic_value = agent.target_critic_value(next_state_list, next_act_list)
-            target_value = rewards + gamma * next_target_critic_value * (1 - dones)
+            # target_value = rewards + gamma * next_target_critic_value * (1 - dones)
+            target_value = rewards + gamma * next_target_critic_value  # todo: maybe remove dones
 
             critic_loss = F.mse_loss(critic_value, target_value.detach(), reduction='mean')
             agent.update_critic(critic_loss)
@@ -97,7 +98,7 @@ class MADDPG:
 
     def update_target(self, tau):
         def soft_update(from_network, to_network):
-            """ copy the parameters of `from_network` to `to_network` with a proportion of tau """
+            """ copy the parameters of `from_network` to `to_network` with a proportion of tau"""
             for from_p, to_p in zip(from_network.parameters(), to_network.parameters()):
                 to_p.data.copy_(tau * from_p.data + (1.0 - tau) * to_p.data)
 
