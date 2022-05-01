@@ -1,4 +1,5 @@
 import argparse
+import time
 
 import numpy as np
 import torch
@@ -42,10 +43,12 @@ if __name__ == '__main__':
         # record reward of each agent in this episode
         episode_reward = np.zeros((args.episode_length, env.n))
         for step in range(args.episode_length):  # interact with the env for an episode
-            actions = maddpg.select_action(obs, explore=False)
+            actions = maddpg.select_action(obs, explore=True)
             next_obs, rewards, dones, infos = env.step(actions)
             episode_reward[step] = rewards
             env.render()
+            time.sleep(0.01)
+            obs = next_obs
 
         # episode finishes
         # calculate cumulative reward of each agent in this episode

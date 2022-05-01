@@ -35,24 +35,14 @@ class Buffer:
         next_obs = self.next_obs[indices]
         done = self.done[indices]
 
-        def transfer(data, first_dim=False):
-            """
-            transfer ndarray to torch.tensor,
-            if `first_dim` is True, stack the ndarray so that the first dimension is `batch_size`,
-            otherwise, the returned value is just a tensor with length of the original ndarray.
-            """
-            if first_dim:
-                data = np.vstack(data)
-            data = torch.from_numpy(data).float()
-            return data
-
         # NOTE that `obs`, `action`, `next_obs` will be passed to network(nn.Module),
         # so the first dimension should be `batch_size`
-        obs = transfer(obs, first_dim=True)  # torch.Size([batch_size, state_dim])
-        action = transfer(action, first_dim=True)  # torch.Size([batch_size, action_dim])
-        reward = transfer(reward)  # just a tensor with length: batch_size
-        next_obs = transfer(next_obs, first_dim=True)  # Size([batch_size, state_dim])
-        done = transfer(done)  # just a tensor with length: batch_size
+        obs = torch.from_numpy(obs).float()  # torch.Size([batch_size, state_dim])
+        action = torch.from_numpy(action).float()  # torch.Size([batch_size, action_dim])
+        reward = torch.from_numpy(reward).float()  # just a tensor with length: batch_size
+        # reward = (reward - reward.mean()) / (reward.std() + 1e-7)
+        next_obs = torch.from_numpy(next_obs).float()  # Size([batch_size, state_dim])
+        done = torch.from_numpy(done).float()  # just a tensor with length: batch_size
 
         return obs, action, reward, next_obs, done
 

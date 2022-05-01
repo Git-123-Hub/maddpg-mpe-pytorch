@@ -45,24 +45,24 @@ class MADDPG:
         for n, agent in enumerate(self.agents):  # each agent select action according to their obs
             act = agent.action(obs[n], explore=explore).squeeze(0).detach().numpy()
             actions.append(act)
-            self.logger.info(f'agent {n}, action: {act}')
+            self.logger.info(f'agent {n}, obs: {obs[n]} action: {act}')
         return actions
 
     def learn(self, batch_size, gamma):
         # get the total num of transitions, these buffers should have same number of transitions
         total_num = len(self.buffers[0])
-        if total_num <= batch_size:  # only start to learn when there are enough experiences to sample
+        if total_num <= batch_size * 25:  # only start to learn when there are enough experiences to sample
             return
         # sample from all the replay buffer using the same index
         indices = np.random.choice(total_num, size=batch_size, replace=False)
         samples = []
-        state_list, act_list, next_state_list, next_act_list = [], [], [], []
+        obs_list, act_list, next_obs_list, next_act_list = [], [], [], []
         for n, buffer in enumerate(self.buffers):
             transitions = buffer.sample(indices)
             samples.append(transitions)
-            state_list.append(transitions[0])
+            obs_list.append(transitions[0])
             act_list.append(transitions[1])
-            next_state_list.append(transitions[3])
+            next_obs_list.append(transitions[3])
             # calculate next_action using target_network and next_state
             next_act_list.append(self.agents[n].target_action(transitions[3]))
 
@@ -70,12 +70,12 @@ class MADDPG:
         for n, agent in enumerate(self.agents):
             # update critic
             states, actions, rewards, next_states, dones = samples[n]
-            critic_value = agent.critic_value(state_list, act_list)
+            critic_value = agent.critic_value(obs_list, act_list)
 
             # calculate target critic value
-            next_target_critic_value = agent.target_critic_value(next_state_list, next_act_list)
-            # target_value = rewards + gamma * next_target_critic_value * (1 - dones)
-            target_value = rewards + gamma * next_target_critic_value  # todo: maybe remove dones
+            next_target_critic_value = agent.target_critic_value(next_obs_list, next_act_list)
+            target_value = rewards + gamma * next_target_critic_value * (1 - dones)
+            # target_value = rewards + gamma * next_target_critic_value  # todo: maybe remove dones
 
             critic_loss = F.mse_loss(critic_value, target_value.detach(), reduction='mean')
             agent.update_critic(critic_loss)
@@ -91,8 +91,9 @@ class MADDPG:
             #         action = samples[agent_name][1]
             #     action_list.append(action)
             action_list = deepcopy(act_list)  # todo: deepcopy????
-            action_list[n] = agent.action(states, explore=False)  # NOTE that NO noise
-            actor_loss = -agent.critic_value(state_list, action_list).mean()
+            # action of the current agent is calculated using its actor
+            action_list[n] = agent.action(states, explore=True)  # NOTE that NO noise
+            actor_loss = -agent.critic_value(obs_list, action_list).mean()
             agent.update_actor(actor_loss)
             self.logger.info(f'agent{n}: critic loss: {critic_loss.item()}, actor loss: {actor_loss.item()}')
 

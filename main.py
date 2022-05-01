@@ -24,7 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('--critic-lr', type=float, default=0.01, help='learning rate of critic')
     parser.add_argument('--update-interval', type=int, default=100,
                         help='step interval of updating target network')
-    parser.add_argument('--tau', type=float, default=0.01, help='soft update parameter')
+    parser.add_argument('--tau', type=float, default=0.02, help='soft update parameter')
     args = parser.parse_args()
 
     # create env
@@ -57,8 +57,9 @@ if __name__ == '__main__':
 
             maddpg.add(obs, actions, rewards, next_obs, dones)
             maddpg.learn(args.batch_size, args.gamma)
-            if total_step % args.update_interval == 0:  #
-                maddpg.update_target(args.tau)
+            # if total_step % args.update_interval == 0:  #
+            maddpg.update_target(args.tau)
+            obs = next_obs
 
         # episode finishes
         # calculate cumulative reward of each agent in this episode
