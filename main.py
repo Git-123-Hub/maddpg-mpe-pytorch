@@ -27,6 +27,14 @@ if __name__ == '__main__':
     parser.add_argument('--tau', type=float, default=0.02, help='soft update parameter')
     args = parser.parse_args()
 
+    # create folder to save result
+    env_dir = os.path.join('results', args.env)
+    if not os.path.exists(env_dir):
+        os.makedirs(env_dir)
+    total_files = len([file for file in os.listdir(env_dir)])
+    result_dir = os.path.join(env_dir, f'{total_files + 1}')
+    os.makedirs(result_dir)
+
     # create env
     scenario = scenarios.load(f'{args.env}.py').Scenario()
     world = scenario.make_world()
@@ -69,7 +77,7 @@ if __name__ == '__main__':
 
     # all episodes performed, training finishes
     # save agent parameters
-    torch.save([agent.actor.state_dict() for agent in maddpg.agents], 'model.pt')
+    torch.save([agent.actor.state_dict() for agent in maddpg.agents], os.path.join(result_dir, 'model.pt'))
 
 
     def get_running_reward(reward_array: np.ndarray, window=100):
@@ -93,5 +101,4 @@ if __name__ == '__main__':
     ax.set_ylabel('reward')
     title = f'training result of maddpg solve {args.env}'
     ax.set_title(title)
-    # plt.savefig(os.path.join(result_dir, title))
-    plt.savefig(title)
+    plt.savefig(os.path.join(result_dir, title))

@@ -1,4 +1,5 @@
 import argparse
+import os
 import time
 
 import numpy as np
@@ -15,6 +16,7 @@ if __name__ == '__main__':
                         choices=['simple_adversary', 'simple_crypto', 'simple_push', 'simple_reference',
                                  'simple_speaker_listener', 'simple_spread', 'simple_tag',
                                  'simple_world_comm'])
+    parser.add_argument('folder', type=str, default='1', help='name of the folder where model is saved')
     parser.add_argument('--episode-length', type=int, default=25, help='steps per episode')
     parser.add_argument('--episode-num', type=int, default=10, help='total number of episode')
     args = parser.parse_args()
@@ -33,7 +35,9 @@ if __name__ == '__main__':
         act_dim_list.append(act_space.n)  # Discrete
 
     maddpg = MADDPG(obs_dim_list, act_dim_list, 0, 0, 0)
-    data = torch.load('model.pt')
+    model_dir = os.path.join('results', args.env, args.folder)
+    assert os.path.exists(model_dir)
+    data = torch.load(os.path.join(model_dir, 'model.pt'))
     for agent, actor_parameter in zip(maddpg.agents, data):
         agent.actor.load_state_dict(actor_parameter)
 
@@ -67,5 +71,4 @@ if __name__ == '__main__':
     ax.set_ylabel('reward')
     title = f'evaluating result of maddpg solve {args.env}'
     ax.set_title(title)
-    # plt.savefig(os.path.join(result_dir, title))
-    plt.savefig(title)
+    plt.savefig(os.path.join(model_dir, title))
