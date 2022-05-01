@@ -32,8 +32,8 @@ if __name__ == '__main__':
     if not os.path.exists(env_dir):
         os.makedirs(env_dir)
     total_files = len([file for file in os.listdir(env_dir)])
-    result_dir = os.path.join(env_dir, f'{total_files + 1}')
-    os.makedirs(result_dir)
+    res_dir = os.path.join(env_dir, f'{total_files + 1}')
+    os.makedirs(res_dir)
 
     # create env
     scenario = scenarios.load(f'{args.env}.py').Scenario()
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     for act_space in env.action_space:  # discrete action
         act_dim_list.append(act_space.n)  # Discrete
 
-    maddpg = MADDPG(obs_dim_list, act_dim_list, args.buffer_capacity, args.actor_lr, args.critic_lr)
+    maddpg = MADDPG(obs_dim_list, act_dim_list, args.buffer_capacity, args.actor_lr, args.critic_lr, res_dir)
 
     total_step = 0
     total_reward = np.zeros((args.episode_num, env.n))  # reward of each agent in each episode
@@ -77,7 +77,9 @@ if __name__ == '__main__':
 
     # all episodes performed, training finishes
     # save agent parameters
-    torch.save([agent.actor.state_dict() for agent in maddpg.agents], os.path.join(result_dir, 'model.pt'))
+    torch.save([agent.actor.state_dict() for agent in maddpg.agents], os.path.join(res_dir, 'model.pt'))
+    # save training reward
+    np.save(os.path.join(res_dir, 'rewards.npy'), total_reward)
 
 
     def get_running_reward(reward_array: np.ndarray, window=100):
@@ -101,4 +103,4 @@ if __name__ == '__main__':
     ax.set_ylabel('reward')
     title = f'training result of maddpg solve {args.env}'
     ax.set_title(title)
-    plt.savefig(os.path.join(result_dir, title))
+    plt.savefig(os.path.join(res_dir, title))

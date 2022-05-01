@@ -1,4 +1,5 @@
 import logging
+import os
 from copy import deepcopy
 
 import numpy as np
@@ -24,7 +25,7 @@ def setup_logger(filename):
 
 
 class MADDPG:
-    def __init__(self, obs_dim_list, act_dim_list, capacity, actor_lr, critic_lr):
+    def __init__(self, obs_dim_list, act_dim_list, capacity, actor_lr, critic_lr, res_dir=None):
         # sum all the dims of each agent to get input dim for critic
         global_obs_dim = sum(obs_dim_list + act_dim_list)
         # create all the agents and corresponding replay buffer
@@ -33,7 +34,10 @@ class MADDPG:
         for obs_dim, act_dim in zip(obs_dim_list, act_dim_list):
             self.agents.append(Agent(obs_dim, act_dim, global_obs_dim, actor_lr, critic_lr))
             self.buffers.append(Buffer(capacity, obs_dim, act_dim))
-        self.logger = setup_logger('maddpg.log')
+        if res_dir is None:
+            self.logger = setup_logger('maddpg.log')
+        else:
+            self.logger = setup_logger(os.path.join(res_dir, 'maddpg.log'))
 
     def add(self, obs, actions, rewards, next_obs, dones):
         """add experience to buffer"""
