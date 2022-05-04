@@ -15,13 +15,13 @@ if __name__ == '__main__':
                         choices=['simple_adversary', 'simple_crypto', 'simple_push', 'simple_reference',
                                  'simple_speaker_listener', 'simple_spread', 'simple_tag',
                                  'simple_world_comm'])
-    parser.add_argument('--episode-length', type=int, default=100, help='steps per episode')
-    parser.add_argument('--episode-num', type=int, default=5000, help='total number of episode')
+    parser.add_argument('--episode-length', type=int, default=25, help='steps per episode')
+    parser.add_argument('--episode-num', type=int, default=10000, help='total number of episode')
     parser.add_argument('--gamma', type=float, default=0.95, help='discount factor')
     parser.add_argument('--buffer-capacity', default=int(1e6))
-    parser.add_argument('--batch-size', default=1000)
-    parser.add_argument('--actor-lr', type=float, default=0.01, help='learning rate of actor')
-    parser.add_argument('--critic-lr', type=float, default=0.01, help='learning rate of critic')
+    parser.add_argument('--batch-size', default=1024)
+    parser.add_argument('--actor-lr', type=float, default=1e-2, help='learning rate of actor')
+    parser.add_argument('--critic-lr', type=float, default=1e-2, help='learning rate of critic')
     parser.add_argument('--update-interval', type=int, default=100,
                         help='step interval of updating target network')
     parser.add_argument('--tau', type=float, default=0.02, help='soft update parameter')

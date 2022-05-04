@@ -1,4 +1,7 @@
 /.venv/
 /.idea/
+/.results/
 *.log
 *.png
+*.pt
+*.npy
