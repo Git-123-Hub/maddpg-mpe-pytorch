@@ -18,7 +18,7 @@ if __name__ == '__main__':
                                  'simple_world_comm'])
     parser.add_argument('--folder', type=str, help='name of the folder where model is saved')
     parser.add_argument('--episode-length', type=int, default=25, help='steps per episode')
-    parser.add_argument('--episode-num', type=int, default=10, help='total number of episode')
+    parser.add_argument('--episode-num', type=int, default=30, help='total number of episode')
     args = parser.parse_args()
 
     # create env
@@ -51,7 +51,7 @@ if __name__ == '__main__':
             next_obs, rewards, dones, infos = env.step(actions)
             episode_reward[step] = rewards
             env.render()
-            time.sleep(0.01)
+            time.sleep(0.02)
             obs = next_obs
 
         # episode finishes

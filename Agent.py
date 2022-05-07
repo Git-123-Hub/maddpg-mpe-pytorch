@@ -29,7 +29,7 @@ class Agent:
         self.target_actor = deepcopy(self.actor)
         self.target_critic = deepcopy(self.critic)
 
-    def action(self, obs, *, explore):
+    def action(self, obs, *, explore=True, model_out=False):
         # this method is called in the following two cases:
         # a) interact with the environment, where input is a numpy.ndarray
         # NOTE that the output is a tensor, you have to convert it to ndarray before input to the environment
@@ -38,17 +38,19 @@ class Agent:
 
         if isinstance(obs, np.ndarray):
             obs = torch.from_numpy(obs).unsqueeze(0).float()  # torch.Size([1, state_size])
-        action = self.actor(obs)  # torch.Size([batch_size, action_size])
+        logits = self.actor(obs)  # torch.Size([batch_size, action_size])
         explore = True  # todo：maybe remove explore
 
         if explore:
             # action = gumbel_softmax(action, tau=1, hard=False)
-            action = my_gumbel_softmax(action)
+            action = my_gumbel_softmax(logits)
+            if model_out:
+                return action, logits
             # if hard=True, the returned samples will be discretized as one-hot vectors
         else:
             # choose action with the biggest actor_output(logit)
-            max_index = action.max(dim=1)[1]
-            action = one_hot(max_index, num_classes=action.size(1))
+            max_index = logits.max(dim=1)[1]
+            logits = one_hot(max_index, num_classes=logits.size(1))
         return action  # onehot tensor with size: torch.Size([batch_size, action_size])
 
     def target_action(self, obs):

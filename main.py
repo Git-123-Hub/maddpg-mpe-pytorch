@@ -22,6 +22,8 @@ if __name__ == '__main__':
     parser.add_argument('--batch-size', default=1024)
     parser.add_argument('--actor-lr', type=float, default=1e-2, help='learning rate of actor')
     parser.add_argument('--critic-lr', type=float, default=1e-2, help='learning rate of critic')
+    parser.add_argument('--steps-before-learn', type=int, default=1e4,
+                        help='steps to be executed before agents start to learn')
     parser.add_argument('--update-interval', type=int, default=100,
                         help='step interval of updating target network')
     parser.add_argument('--tau', type=float, default=0.02, help='soft update parameter')
@@ -64,9 +66,12 @@ if __name__ == '__main__':
             total_step += 1
 
             maddpg.add(obs, actions, rewards, next_obs, dones)
-            maddpg.learn(args.batch_size, args.gamma)
-            # if total_step % args.update_interval == 0:  #
-            maddpg.update_target(args.tau)
+            # only start to learn when there are enough experiences to sample
+            if total_step > args.steps_before_learn:
+                maddpg.learn(args.batch_size, args.gamma)
+                # if total_step % args.update_interval == 0:  #
+                maddpg.update_target(args.tau)
+
             obs = next_obs
 
         # episode finishes
