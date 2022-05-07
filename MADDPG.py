@@ -73,7 +73,7 @@ class MADDPG:
     def select_action(self, obs, *, explore=True):
         actions = []
         for n, agent in enumerate(self.agents):  # each agent select action according to their obs
-            act = agent.action(obs[n], explore=explore).squeeze(0).detach().numpy()
+            act = agent.action(obs[n]).squeeze(0).detach().numpy()
             actions.append(act)
             self.logger.info(f'agent {n}, obs: {obs[n]} action: {act}')
         return actions
@@ -123,7 +123,7 @@ class MADDPG:
             #     action_list.append(action)
             action_list = deepcopy(act_list)  # todo: deepcopy????
             # action of the current agent is calculated using its actor
-            action_list[n] = agent.action(states, explore=True)  # NOTE that NO noise
+            action_list[n] = agent.action(states)  # NOTE that NO noise
             actor_loss = -agent.critic_value(obs_list, action_list).mean()
             agent.update_actor(actor_loss)
             self.logger.info(f'agent{n}: critic loss: {critic_loss.item()}, actor loss: {actor_loss.item()}')

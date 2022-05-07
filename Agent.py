@@ -9,12 +9,6 @@ from torch.optim import Adam
 import torch.nn.functional as F
 
 
-def my_gumbel_softmax(logits, tau=1, eps=1e-20):
-    epsilon = torch.rand_like(logits)
-    logits += -torch.log(-torch.log(epsilon + eps) + eps)
-    return F.softmax(logits / tau, dim=-1)
-
-
 class Agent:
     """single agent in MADDPG"""
 
@@ -29,7 +23,13 @@ class Agent:
         self.target_actor = deepcopy(self.actor)
         self.target_critic = deepcopy(self.critic)
 
-    def action(self, obs, *, explore=True, model_out=False):
+    @staticmethod
+    def gumbel_softmax(logits, tau=1, eps=1e-20):
+        epsilon = torch.rand_like(logits)
+        logits += -torch.log(-torch.log(epsilon + eps) + eps)
+        return F.softmax(logits / tau, dim=-1)
+
+    def action(self, obs, *, model_out=False):
         # this method is called in the following two cases:
         # a) interact with the environment, where input is a numpy.ndarray
         # NOTE that the output is a tensor, you have to convert it to ndarray before input to the environment
@@ -39,34 +39,21 @@ class Agent:
         if isinstance(obs, np.ndarray):
             obs = torch.from_numpy(obs).unsqueeze(0).float()  # torch.Size([1, state_size])
         logits = self.actor(obs)  # torch.Size([batch_size, action_size])
-        explore = True  # todo：maybe remove explore
-
-        if explore:
-            # action = gumbel_softmax(action, tau=1, hard=False)
-            action = my_gumbel_softmax(logits)
-            if model_out:
-                return action, logits
-            # if hard=True, the returned samples will be discretized as one-hot vectors
-        else:
-            # choose action with the biggest actor_output(logit)
-            max_index = logits.max(dim=1)[1]
-            logits = one_hot(max_index, num_classes=logits.size(1))
-        return action  # onehot tensor with size: torch.Size([batch_size, action_size])
+        # action = gumbel_softmax(action, tau=1, hard=False)
+        action = self.gumbel_softmax(logits)
+        if model_out:
+            return action, logits
+        return action  # torch.Size([batch_size, action_size])
 
     def target_action(self, obs):
         # when calculate target critic value in MADDPG,
         # we use target actor to get next action given next states,
         # which is sampled from replay buffer with size torch.Size([batch_size, state_dim])
 
-        action = self.target_actor(obs)  # torch.Size([batch_size, action_size])
-        # action = gumbel_softmax(action, hard=False)
-        action = my_gumbel_softmax(action)
+        logits = self.target_actor(obs)  # torch.Size([batch_size, action_size])
+        # action = gumbel_softmax(logits, hard=False)
+        action = self.gumbel_softmax(logits)
         return action.squeeze(0).detach()  # onehot tensor with size: torch.Size([batch_size, action_size])
-        # NOTE that I didn't use noise during this procedure
-        # so I just choose action with the biggest actor_output(logit)
-        max_index = action.max(dim=1)[1]
-        action = one_hot(max_index, num_classes=action.size(1)).detach()
-        return action  # onehot tensor with size: torch.Size([batch_size, action_size])
 
     def critic_value(self, state_list: List[Tensor], act_list: List[Tensor]):
         x = torch.cat(state_list + act_list, 1)
@@ -102,7 +89,15 @@ class MLPNetwork(nn.Module):
         ]
         if last_layer is not None:
             modules.append(last_layer)
-        self.net = nn.Sequential(*modules)
+        self.net = nn.Sequential(*modules).apply(self.init)
+
+    @staticmethod
+    def init(m):
+        """init parameter of the module"""
+        gain = nn.init.calculate_gain('relu')
+        if isinstance(m, nn.Linear):
+            torch.nn.init.xavier_uniform_(m.weight, gain=gain)
+            m.bias.data.fill_(0.01)
 
     def forward(self, x):
         return self.net(x)

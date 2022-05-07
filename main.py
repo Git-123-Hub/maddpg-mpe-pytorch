@@ -78,7 +78,8 @@ if __name__ == '__main__':
         # calculate cumulative reward of each agent in this episode
         cumulative_reward = episode_reward.sum(axis=0)
         total_reward[episode] = cumulative_reward
-        print(f'episode {episode + 1}: cumulative reward: {cumulative_reward}')
+        print(f'episode {episode + 1}: cumulative reward: {cumulative_reward}, '
+              f'sum reward: {sum(cumulative_reward)}')
 
     # all episodes performed, training finishes
     # save agent parameters
