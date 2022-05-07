@@ -5,11 +5,16 @@
 
 # Trouble shooting
 
-`ImportError: cannot import name 'prng' from 'gym.spaces'`
+- stop print info while rendering
 
-after install multiagent-particle-envs, install an older version of gym
+  comment `line 213` in `multiagent-particle-envs\multiagent\environment.py`
 
-```shell
-pip uninstall gym
-pip install gym==0.10.5
-```
+- `ImportError: cannot import name 'prng' from 'gym.spaces'`
+
+  after install multiagent-particle-envs, install an older version of gym
+
+  ```shell
+  pip uninstall gym
+  pip install gym==0.10.5
+  ```
+
