@@ -12,16 +12,17 @@ import torch.nn.functional as F
 class Agent:
     """single agent in MADDPG"""
 
-    def __init__(self, obs_dim, act_dim, global_obs_dim, actor_lr, critic_lr):
+    def __init__(self, obs_dim, act_dim, global_obs_dim, actor_lr, critic_lr, device):
         # the actor output logit of each action
-        self.actor = MLPNetwork(obs_dim, act_dim)
+        self.actor = MLPNetwork(obs_dim, act_dim).to(device)
         # critic input all the states and actions
         # if there are 3 agents for example, the input for critic is (obs1, obs2, obs3, act1, act2, act3)
-        self.critic = MLPNetwork(global_obs_dim, 1)
+        self.critic = MLPNetwork(global_obs_dim, 1).to(device)
         self.actor_optimizer = Adam(self.actor.parameters(), lr=actor_lr)
         self.critic_optimizer = Adam(self.critic.parameters(), lr=critic_lr)
-        self.target_actor = deepcopy(self.actor)
-        self.target_critic = deepcopy(self.critic)
+        self.target_actor = deepcopy(self.actor).to(device)
+        self.target_critic = deepcopy(self.critic).to(device)
+        self.device = device
 
     @staticmethod
     def gumbel_softmax(logits, tau=1, eps=1e-20):
@@ -36,8 +37,6 @@ class Agent:
         # b) when update actor, calculate action using actor and states,
         # which is sampled from replay buffer with size: torch.Size([batch_size, state_dim])
 
-        if isinstance(obs, np.ndarray):
-            obs = torch.from_numpy(obs).unsqueeze(0).float()  # torch.Size([1, state_size])
         logits = self.actor(obs)  # torch.Size([batch_size, action_size])
         # action = gumbel_softmax(action, tau=1, hard=False)
         action = self.gumbel_softmax(logits)

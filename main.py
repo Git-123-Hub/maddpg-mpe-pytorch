@@ -1,5 +1,7 @@
 import argparse
+import datetime
 import os
+from time import time
 
 import numpy as np
 import torch
@@ -28,6 +30,7 @@ if __name__ == '__main__':
                         help='step interval of updating target network')
     parser.add_argument('--tau', type=float, default=0.02, help='soft update parameter')
     args = parser.parse_args()
+    start = time()
 
     # create folder to save result
     env_dir = os.path.join('results', args.env)
@@ -110,3 +113,5 @@ if __name__ == '__main__':
     title = f'training result of maddpg solve {args.env}'
     ax.set_title(title)
     plt.savefig(os.path.join(res_dir, title))
+
+    print(f'training finishes, time spent: {datetime.timedelta(seconds=int(time() - start))}')

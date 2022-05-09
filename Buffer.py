@@ -3,7 +3,7 @@ import torch
 
 
 class Buffer:
-    def __init__(self, capacity, obs_dim, act_dim):
+    def __init__(self, capacity, obs_dim, act_dim, device):
         self.capacity = capacity
 
         self.obs = np.zeros((capacity, obs_dim))
@@ -14,6 +14,8 @@ class Buffer:
 
         self._index = 0
         self._size = 0
+
+        self.device = device
 
     def add(self, obs, action, reward, next_obs, done):
         """ add an experience to the memory """
@@ -37,12 +39,12 @@ class Buffer:
 
         # NOTE that `obs`, `action`, `next_obs` will be passed to network(nn.Module),
         # so the first dimension should be `batch_size`
-        obs = torch.from_numpy(obs).float()  # torch.Size([batch_size, state_dim])
-        action = torch.from_numpy(action).float()  # torch.Size([batch_size, action_dim])
-        reward = torch.from_numpy(reward).float()  # just a tensor with length: batch_size
+        obs = torch.from_numpy(obs).float().to(self.device)  # torch.Size([batch_size, state_dim])
+        action = torch.from_numpy(action).float().to(self.device)  # torch.Size([batch_size, action_dim])
+        reward = torch.from_numpy(reward).float().to(self.device)  # just a tensor with length: batch_size
         # reward = (reward - reward.mean()) / (reward.std() + 1e-7)
-        next_obs = torch.from_numpy(next_obs).float()  # Size([batch_size, state_dim])
-        done = torch.from_numpy(done).float()  # just a tensor with length: batch_size
+        next_obs = torch.from_numpy(next_obs).float().to(self.device)  # Size([batch_size, state_dim])
+        done = torch.from_numpy(done).float().to(self.device)  # just a tensor with length: batch_size
 
         return obs, action, reward, next_obs, done
 
