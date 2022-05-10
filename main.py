@@ -24,10 +24,12 @@ if __name__ == '__main__':
     parser.add_argument('--batch-size', default=1024)
     parser.add_argument('--actor-lr', type=float, default=1e-2, help='learning rate of actor')
     parser.add_argument('--critic-lr', type=float, default=1e-2, help='learning rate of critic')
-    parser.add_argument('--steps-before-learn', type=int, default=1e4,
+    parser.add_argument('--steps-before-learn', type=int, default=5e4,
                         help='steps to be executed before agents start to learn')
-    parser.add_argument('--update-interval', type=int, default=100,
-                        help='step interval of updating target network')
+    parser.add_argument('--learn-interval', type=int, default=100,
+                        help='maddpg will only learn every this many steps')
+    parser.add_argument('--save-interval', type=int, default=100,
+                        help='save model once every time this many episodes are completed')
     parser.add_argument('--tau', type=float, default=0.02, help='soft update parameter')
     args = parser.parse_args()
     start = time()
@@ -39,6 +41,8 @@ if __name__ == '__main__':
     total_files = len([file for file in os.listdir(env_dir)])
     res_dir = os.path.join(env_dir, f'{total_files + 1}')
     os.makedirs(res_dir)
+    model_dir = os.path.join(res_dir, 'model')
+    os.makedirs(model_dir)
 
     # create env
     scenario = scenarios.load(f'{args.env}.py').Scenario()
@@ -62,7 +66,7 @@ if __name__ == '__main__':
         # record reward of each agent in this episode
         episode_reward = np.zeros((args.episode_length, env.n))
         for step in range(args.episode_length):  # interact with the env for an episode
-            actions = maddpg.select_action(obs, explore=True)
+            actions = maddpg.select_action(obs)
             next_obs, rewards, dones, infos = env.step(actions)
             episode_reward[step] = rewards
             # env.render()
@@ -71,9 +75,12 @@ if __name__ == '__main__':
             maddpg.add(obs, actions, rewards, next_obs, dones)
             # only start to learn when there are enough experiences to sample
             if total_step > args.steps_before_learn:
-                maddpg.learn(args.batch_size, args.gamma)
-                # if total_step % args.update_interval == 0:  #
-                maddpg.update_target(args.tau)
+                if total_step % args.learn_interval == 0:
+                    maddpg.learn(args.batch_size, args.gamma)
+                    maddpg.update_target(args.tau)
+                if episode % args.save_interval == 0:
+                    torch.save([agent.actor.state_dict() for agent in maddpg.agents],
+                               os.path.join(model_dir, f'model_{episode}.pt'))
 
             obs = next_obs
 

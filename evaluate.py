@@ -47,7 +47,7 @@ if __name__ == '__main__':
         # record reward of each agent in this episode
         episode_reward = np.zeros((args.episode_length, env.n))
         for step in range(args.episode_length):  # interact with the env for an episode
-            actions = maddpg.select_action(obs, explore=True)
+            actions = maddpg.select_action(obs)
             next_obs, rewards, dones, infos = env.step(actions)
             episode_reward[step] = rewards
             env.render()

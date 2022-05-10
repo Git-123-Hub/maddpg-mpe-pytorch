@@ -75,13 +75,13 @@ class MADDPG:
 
         return obs_list, act_list, reward_cur, next_obs_list, done_cur, next_act_list, obs_cur
 
-    def select_action(self, obs, *, explore=True):
+    def select_action(self, obs):
         actions = []
         for n, agent in enumerate(self.agents):  # each agent select action according to their obs
             o = torch.from_numpy(obs[n]).unsqueeze(0).float().to(self.device)  # torch.Size([1, state_size])
             act = agent.action(o).squeeze(0).detach().cpu().numpy()
             actions.append(act)
-            self.logger.info(f'agent {n}, obs: {obs[n]} action: {act}')
+            # self.logger.info(f'agent {n}, obs: {obs[n]} action: {act}')
         return actions
 
     def learn(self, batch_size, gamma):
@@ -104,7 +104,7 @@ class MADDPG:
             actor_loss = -agent.critic_value(obs, act).mean()
             actor_loss_pse = torch.pow(logits, 2).mean()
             agent.update_actor(actor_loss + 1e-3 * actor_loss_pse)  # todo: add loss_pse
-            self.logger.info(f'agent{i}: critic loss: {critic_loss.item()}, actor loss: {actor_loss.item()}')
+            # self.logger.info(f'agent{i}: critic loss: {critic_loss.item()}, actor loss: {actor_loss.item()}')
 
     def update_target(self, tau):
         def soft_update(from_network, to_network):

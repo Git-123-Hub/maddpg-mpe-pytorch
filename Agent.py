@@ -25,7 +25,7 @@ class Agent:
         self.device = device
 
     @staticmethod
-    def gumbel_softmax(logits, tau=1, eps=1e-20):
+    def gumbel_softmax(logits, tau=1.0, eps=1e-20):
         epsilon = torch.rand_like(logits)
         logits += -torch.log(-torch.log(epsilon + eps) + eps)
         return F.softmax(logits / tau, dim=-1)
