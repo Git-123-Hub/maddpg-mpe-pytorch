@@ -18,7 +18,7 @@ if __name__ == '__main__':
                                  'simple_speaker_listener', 'simple_spread', 'simple_tag',
                                  'simple_world_comm'])
     parser.add_argument('--episode-length', type=int, default=25, help='steps per episode')
-    parser.add_argument('--episode-num', type=int, default=10000, help='total number of episode')
+    parser.add_argument('--episode-num', type=int, default=30000, help='total number of episode')
     parser.add_argument('--gamma', type=float, default=0.95, help='discount factor')
     parser.add_argument('--buffer-capacity', default=int(1e6))
     parser.add_argument('--batch-size', default=1024)

@@ -1,13 +1,12 @@
 import logging
 import os
-from copy import deepcopy
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 
 from Agent import Agent
 from Buffer import Buffer
-import torch.nn.functional as F
 
 
 def setup_logger(filename):
@@ -27,6 +26,12 @@ def setup_logger(filename):
 
 class MADDPG:
     def __init__(self, obs_dim_list, act_dim_list, capacity, actor_lr, critic_lr, res_dir=None, device=None):
+        """
+        :param obs_dim_list: list of observation dimension of each agent
+        :param act_dim_list: list of action dimension of each agent
+        :param capacity: capacity of the replay buffer
+        :param res_dir: directory where log file and all the data and figures will be saved
+        """
         if device is None:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         else:
@@ -54,11 +59,10 @@ class MADDPG:
         """sample experience from all the agents' buffers, and collect data for network input"""
         # get the total num of transitions, these buffers should have same number of transitions
         total_num = len(self.buffers[0])
-        # sample from all the replay buffer using the same index
         indices = np.random.choice(total_num, size=batch_size, replace=False)
 
         # NOTE that in MADDPG, we need the obs and actions of all agents
-        # and only the reward and done of the current agent is needed in the calculation
+        # but only the reward and done of the current agent is needed in the calculation
         obs_list, act_list, next_obs_list, next_act_list = [], [], [], []
         reward_cur, done_cur, obs_cur = None, None, None
         for n, buffer in enumerate(self.buffers):
@@ -79,6 +83,7 @@ class MADDPG:
         actions = []
         for n, agent in enumerate(self.agents):  # each agent select action according to their obs
             o = torch.from_numpy(obs[n]).unsqueeze(0).float().to(self.device)  # torch.Size([1, state_size])
+            # Note that the result is tensor, convert it to ndarray before input to the environment
             act = agent.action(o).squeeze(0).detach().cpu().numpy()
             actions.append(act)
             # self.logger.info(f'agent {n}, obs: {obs[n]} action: {act}')
@@ -103,7 +108,7 @@ class MADDPG:
             act[i] = action
             actor_loss = -agent.critic_value(obs, act).mean()
             actor_loss_pse = torch.pow(logits, 2).mean()
-            agent.update_actor(actor_loss + 1e-3 * actor_loss_pse)  # todo: add loss_pse
+            agent.update_actor(actor_loss + 1e-3 * actor_loss_pse)
             # self.logger.info(f'agent{i}: critic loss: {critic_loss.item()}, actor loss: {actor_loss.item()}')
 
     def update_target(self, tau):
@@ -115,6 +120,3 @@ class MADDPG:
         for agent in self.agents:
             soft_update(agent.actor, agent.target_actor)
             soft_update(agent.critic, agent.target_critic)
-
-    def load(self, file):
-        pass

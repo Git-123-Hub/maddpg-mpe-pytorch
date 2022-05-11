@@ -3,6 +3,8 @@ import torch
 
 
 class Buffer:
+    """replay buffer for each agent"""
+
     def __init__(self, capacity, obs_dim, act_dim, device):
         self.capacity = capacity
 

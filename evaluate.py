@@ -16,8 +16,8 @@ if __name__ == '__main__':
                         choices=['simple_adversary', 'simple_crypto', 'simple_push', 'simple_reference',
                                  'simple_speaker_listener', 'simple_spread', 'simple_tag',
                                  'simple_world_comm'])
-    parser.add_argument('--folder', type=str, help='name of the folder where model is saved')
-    parser.add_argument('--episode-length', type=int, default=25, help='steps per episode')
+    parser.add_argument('--folder', type=str, default='1', help='name of the folder where model is saved')
+    parser.add_argument('--episode-length', type=int, default=50, help='steps per episode')
     parser.add_argument('--episode-num', type=int, default=30, help='total number of episode')
     args = parser.parse_args()
 
@@ -40,6 +40,7 @@ if __name__ == '__main__':
     data = torch.load(os.path.join(model_dir, 'model.pt'))
     for agent, actor_parameter in zip(maddpg.agents, data):
         agent.actor.load_state_dict(actor_parameter)
+    print(f'MADDPG load model.pt from {model_dir}')
 
     total_reward = np.zeros((args.episode_num, env.n))  # reward of each episode
     for episode in range(args.episode_num):
